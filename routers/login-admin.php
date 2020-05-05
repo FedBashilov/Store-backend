@@ -9,18 +9,18 @@ use \Firebase\JWT\JWT;
 function route($method, $urlData, $formData) {
 
     require 'database.php';
-    include_once 'core.php';
+    include_once 'adminJWT.php';
 
-    // POST /login
+    // POST /login-admin
     if ($method === 'POST') {
-        $user = json_decode($formData);
+        $admin = json_decode($formData);
     // Sanitize.
-        $email = mysqli_real_escape_string($con, trim( $user->data->email));
-        $password = mysqli_real_escape_string($con, trim( $user->data->password));
+        $login = mysqli_real_escape_string($con, trim( $admin->data->login));
+        $password = mysqli_real_escape_string($con, trim( $admin->data->password));
 
-        $sqlUser = "SELECT * FROM `user` WHERE email='$email'";
+        $sqlAdmin = "SELECT * FROM `admin` WHERE login='$login'";
 
-        if( $row = mysqli_fetch_assoc( mysqli_query($con,$sqlUser) ) ){
+        if( $row = mysqli_fetch_assoc( mysqli_query($con,$sqlAdmin) ) ){
 
           if( password_verify( $password, $row['password'] ) ){
             $token = array(
@@ -30,9 +30,7 @@ function route($method, $urlData, $formData) {
                "nbf" => $nbf,
                "data" => array(
                    "id" => $row['id'],
-                   "first_name" => $row['first_name'],
-                   "last_name" => $row['last_name'],
-                   "email" => $row['email']
+                   "login" => $row['login']
                )
             );
 
@@ -40,12 +38,7 @@ function route($method, $urlData, $formData) {
 
             // создание jwt
             $jwt = JWT::encode($token, $key);
-            echo json_encode(
-                array(
-                    "message" => "Успешный вход в систему.",
-                    "jwt" => $jwt
-                )
-            );
+            echo json_encode($jwt);
           }
           else{
             echo json_encode("Wrong password!");
@@ -53,7 +46,7 @@ function route($method, $urlData, $formData) {
 
         }
         else {
-            echo json_encode("Wrong email!");
+            echo json_encode("Wrong login!");
         }
         return;
     }

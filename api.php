@@ -11,11 +11,18 @@ $formData = getFormData($method);
 
 function getFormData($method) {
 
-    // GET or POST:
-    if ($method === 'GET') return $_GET;
+    if ($method === 'GET')
+      return $_GET;
     if ($method === 'POST'){
-        $postdata = file_get_contents("php://input");
-        return $postdata;
+      $postdata = file_get_contents("php://input");
+      return $postdata;
+    }
+    if($method === 'PUT') {
+      $putdata = file_get_contents('php://input');
+      return $putdata;
+    }
+    if($method === 'DELETE'){
+      return;
     }
     header('HTTP/1.0 400 Bad Request');
     echo json_encode(array(

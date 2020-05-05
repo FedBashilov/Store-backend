@@ -6,7 +6,7 @@ error_reporting(E_ALL);
 date_default_timezone_set('Europe/Moscow');
 
 // переменные, используемые для JWT
-$key = "your_secret_key";
+$key = "key_for_client_jwt";
 $iss = "http://localhost";
 $aud = "http://localhost";
 $iat = 1356999524;
