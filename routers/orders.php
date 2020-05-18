@@ -10,71 +10,145 @@ function route($method, $urlData, $formData) {
 
     require 'database.php';
 
-    //GET /orders
+
     if($method === 'GET'){
       include_once 'adminJWT.php';
 
-      $jwt = getallheaders()["JWT"];
+      //GET /orders
+      if (count($urlData) === 0) {
+        $jwt = getallheaders()["JWT"];
 
-      if($jwt) {
-        try {
-          $decoded = JWT::decode($jwt, $key, array('HS256'));
-        }
-        catch (Exception $e){
-          http_response_code(401);
-          echo json_encode("Access denied!");
-          return;
-        }
+        if($jwt) {
+          try {
+            $decoded = JWT::decode($jwt, $key, array('HS256'));
+          }
+          catch (Exception $e){
+            http_response_code(401);
+            echo json_encode("Access denied!");
+            return;
+          }
 
-        $sqlCheckAdmin = "SELECT * FROM `admin` WHERE id=".$decoded->data->id;
-        $admin = mysqli_query($con, $sqlCheckAdmin);
-        if( $admin ){
-          $sqlOrders = "SELECT * FROM `client_order`";
-          if($result = mysqli_query($con,$sqlOrders)){
-            for($i = 0; $row = mysqli_fetch_assoc($result); $i++) {
-              $allOrders[$i]['id'] = $row['id'];
-              $allOrders[$i]['address'] = $row['address'];
-              $allOrders[$i]['viewed'] = $row['viewed'];
-              $allOrders[$i]['bought'] = $row['bought'];
-              $allOrders[$i]['created'] = $row['created'];
+          $sqlCheckAdmin = "SELECT * FROM `admin` WHERE id=".$decoded->data->id;
+          $admin = mysqli_query($con, $sqlCheckAdmin);
+          if( $admin ){
+            $sqlOrders = "SELECT * FROM `client_order`";
+            if($result = mysqli_query($con,$sqlOrders)){
+              for($i = 0; $row = mysqli_fetch_assoc($result); $i++) {
+                $allOrders[$i]['id'] = $row['id'];
+                $allOrders[$i]['address'] = $row['address'];
+                $allOrders[$i]['viewed'] = $row['viewed'] == 1;
+                $allOrders[$i]['bought'] = $row['bought'] == 1;
+                $allOrders[$i]['created'] = $row['created'];
 
-              $sqlClient = "SELECT first_name FROM `client` WHERE id=".$row['client_id'];
+                $sqlClient = "SELECT first_name, phone, email FROM `client` WHERE id=".$row['client_id'];
 
-              if( $client = mysqli_fetch_assoc(mysqli_query($con,$sqlClient)) ){
-                $allOrders[$i]['client_first_name'] = $client['first_name'];
-              }
+                if( $client = mysqli_fetch_assoc(mysqli_query($con,$sqlClient)) ){
+                  $allOrders[$i]['client_first_name'] = $client['first_name'];
+                  $allOrders[$i]['phone'] = $client['phone'];
+                  $allOrders[$i]['email'] = $client['email'];
+                }
 
-              $sqlOrderProducts = "SELECT * FROM `order_product` WHERE order_id=".$row['id'];
-              if( $resOrderProducts = mysqli_query($con,$sqlOrderProducts) ){
-                for($j = 0; $resOrderProduct = mysqli_fetch_assoc($resOrderProducts); $j++) {
-                  $sqlProduct = "SELECT * FROM `product` WHERE id=".$resOrderProduct['product_id'];
-                  if( $resProduct = mysqli_fetch_assoc(mysqli_query($con,$sqlProduct)) ){
-                    $allOrders[$i]['products'][$j]['id'] = $resProduct['id'];
-                    $allOrders[$i]['products'][$j]['name'] = $resProduct['name'];
+                $sqlOrderProducts = "SELECT * FROM `order_product` WHERE order_id=".$row['id'];
+                if( $resOrderProducts = mysqli_query($con,$sqlOrderProducts) ){
+                  $allOrders[$i]['total_price'] = 0;
+                  for($j = 0; $resOrderProduct = mysqli_fetch_assoc($resOrderProducts); $j++) {
+                    $sqlProduct = "SELECT * FROM `product` WHERE id=".$resOrderProduct['product_id'];
+                    if( $resProduct = mysqli_fetch_assoc(mysqli_query($con,$sqlProduct)) ){
+                      $allOrders[$i]['products'][$j]['id'] = $resProduct['id'];
+                      $allOrders[$i]['products'][$j]['name'] = $resProduct['name'];
+                      $allOrders[$i]['products'][$j]['amount'] = $resOrderProduct['amount'];
+                      $allOrders[$i]['total_price'] += $resProduct['price'] * $resOrderProduct['amount'];
+                    }
                   }
-
-                  $allOrders[$i]['products'][$j]['amount'] = $resOrderProduct['amount'];
                 }
               }
+              http_response_code(200);
+              echo json_encode($allOrders);
             }
-            http_response_code(200);
-            echo json_encode($allOrders);
+            else{
+              http_response_code(404);
+            }
           }
-          else{
-            http_response_code(404);
+          else {
+            http_response_code(401);
+            echo json_encode("Invalid token! Access denied!");
           }
         }
         else {
           http_response_code(401);
-          echo json_encode("Invalid token! Access denied!");
+          echo json_encode("Access denied!");
         }
+        return;
       }
-      else {
-        http_response_code(401);
-        echo json_encode("Access denied!");
+
+      //GET /orders/{id}
+      if (count($urlData) === 1) {
+        $jwt = getallheaders()["JWT"];
+
+        if($jwt) {
+          try {
+            $decoded = JWT::decode($jwt, $key, array('HS256'));
+          }
+          catch (Exception $e){
+            http_response_code(401);
+            echo json_encode("Access denied!");
+            return;
+          }
+
+          $sqlCheckAdmin = "SELECT * FROM `admin` WHERE id=".$decoded->data->id;
+          $admin = mysqli_query($con, $sqlCheckAdmin);
+          if( $admin ){
+            $sqlOrder = "SELECT * FROM `client_order` WHERE id=".$urlData[0];
+            if($result = mysqli_query($con,$sqlOrder)){
+              $row = mysqli_fetch_assoc($result);
+              $order['id'] = $row['id'];
+              $order['address'] = $row['address'];
+              $order['viewed'] = $row['viewed'] == 1;
+              $order['bought'] = $row['bought'] == 1;
+              $order['created'] = $row['created'];
+
+              $sqlClient = "SELECT first_name, phone, email FROM `client` WHERE id=".$row['client_id'];
+
+              if( $client = mysqli_fetch_assoc(mysqli_query($con,$sqlClient)) ){
+                $order['client_first_name'] = $client['first_name'];
+                $order['phone'] = $client['phone'];
+                $order['email'] = $client['email'];
+                }
+
+                $sqlOrderProducts = "SELECT * FROM `order_product` WHERE order_id=".$row['id'];
+                if( $resOrderProducts = mysqli_query($con,$sqlOrderProducts) ){
+                  $order['total_price'] = 0;
+                  for($i = 0; $resOrderProduct = mysqli_fetch_assoc($resOrderProducts); $i++) {
+                    $sqlProduct = "SELECT * FROM `product` WHERE id=".$resOrderProduct['product_id'];
+                    if( $resProduct = mysqli_fetch_assoc(mysqli_query($con,$sqlProduct)) ){
+                      $order['products'][$i]['id'] = $resProduct['id'];
+                      $order['products'][$i]['name'] = $resProduct['name'];
+                      $order['products'][$i]['amount'] = $resOrderProduct['amount'];
+                      $order['total_price'] += $resProduct['price'] * $resOrderProduct['amount'];
+                    }
+                  }
+                }
+              http_response_code(200);
+              echo json_encode($order);
+            }
+            else{
+              http_response_code(404);
+            }
+          }
+          else {
+            http_response_code(401);
+            echo json_encode("Invalid token! Access denied!");
+          }
+        }
+        else {
+          http_response_code(401);
+          echo json_encode("Access denied!");
+        }
+        return;
       }
-      return;
+
     }
+
 
     // POST /orders
     if ($method === 'POST') {
@@ -138,37 +212,66 @@ function route($method, $urlData, $formData) {
 
     // PUT /orders
     if ($method === 'PUT') {
-        $newOrder = json_decode($formData);
-        // Sanitize.
-        $id = mysqli_real_escape_string($con, trim( $newOrder->data->id));
-        $address = mysqli_real_escape_string($con, trim( $newOrder->data->address));
-        $viewed = mysqli_real_escape_string($con, trim( $newOrder->data->viewed));
-        $bought = mysqli_real_escape_string($con, trim( $newOrder->data->bought));
-        //store order
-        $sqlOrder = "UPDATE `client_order` SET address='{$address}', viewed='{$viewed}', bought='{$bought}' WHERE id='{$id}'";
+        include_once 'adminJWT.php';
 
-        if(mysqli_query($con,$sqlOrder)){
+        $jwt = getallheaders()["JWT"];
 
-            foreach($newOrder->data->products as $order_product){
+        if($jwt) {
+          try {
+            $decoded = JWT::decode($jwt, $key, array('HS256'));
+          }
+          catch (Exception $e){
+            http_response_code(401);
+            echo json_encode("Access denied!");
+            return;
+          }
 
-              $sqlOrderProduct= "REPLACE INTO `order_product`(`order_id`, `product_id`, `amount`) VALUES ('{$id}', '{$order_product->id}', '{$order_product->amount}')";
+          $sqlCheckAdmin = "SELECT * FROM `admin` WHERE id=".$decoded->data->id;
+          $admin = mysqli_query($con, $sqlCheckAdmin);
+          if( $admin ){
+            $newOrder = json_decode($formData);
+            // Sanitize.
+            $id = mysqli_real_escape_string($con, trim( $newOrder->data->id));
+            $address = mysqli_real_escape_string($con, trim( $newOrder->data->address));
+            $viewed = mysqli_real_escape_string($con, trim( $newOrder->data->viewed)) ? 1 : 0;
+            $bought = mysqli_real_escape_string($con, trim( $newOrder->data->bought)) ? 1 : 0;
+            //store order
+            $sqlOrder = "UPDATE `client_order` SET address='{$address}', viewed='{$viewed}', bought='{$bought}' WHERE id='{$id}'";
 
-              if(!mysqli_query($con, $sqlOrderProduct)){
+            if(mysqli_query($con,$sqlOrder)){
+
+                $sqlDelete = "DELETE FROM `order_product` WHERE order_id='{$id}'";
+                if(mysqli_query($con, $sqlDelete)){
+
+                  foreach($newOrder->data->products as $order_product){
+
+                    $sqlOrderProduct= "REPLACE INTO `order_product`(`order_id`, `product_id`, `amount`) VALUES ('{$id}', '{$order_product->id}', '{$order_product->amount}')";
+                    if(!mysqli_query($con, $sqlOrderProduct)){
+                      http_response_code(422);
+                      echo "error";
+                      return;
+                    }
+                  }
+                  http_response_code(200);
+                  echo json_encode($id);
+                }
+            }
+            else
+            {
                 http_response_code(422);
                 echo "error";
-                return;
-              }
             }
-            http_response_code(200);
-            echo json_encode($id);
+          }
+          else {
+            http_response_code(401);
+            echo json_encode("Invalid token! Access denied!");
+          }
         }
-        else
-        {
-            http_response_code(201);
-            echo "error";
+        else {
+          http_response_code(401);
+          echo json_encode("Access denied!");
         }
-
-        return;
+      return;
     }
 
     //DELETE /orders/{id}

@@ -95,14 +95,12 @@ function route($method, $urlData, $formData) {
 
             // создание jwt
             $jwt = JWT::encode($token, $key);
-            echo json_encode($jwt);
+            echo json_encode(array("jwt" => $jwt));
 
           } else {
-            http_response_code(422);
             echo json_encode("Error. Registration failed!");
           }
       } else {
-          http_response_code(422);
           echo json_encode("Email is already registered!");
       }
       return;
@@ -134,14 +132,9 @@ function route($method, $urlData, $formData) {
               $last_name = mysqli_real_escape_string($con, trim($client->data->last_name));
               $email = mysqli_real_escape_string($con, trim($client->data->email));
               $phone = mysqli_real_escape_string($con, trim($client->data->phone));
-              $password = mysqli_real_escape_string($con, trim($client->data->password));
 
-              $password = password_hash($password, PASSWORD_DEFAULT);
-              if(!$password){
-                echo json_encode("Error! Cannot make password");
-              }
               if($id == $decoded->data->id){
-               $sqlClient = "UPDATE `client` SET first_name='{$first_name}', last_name='{$last_name}', email='{$email}', phone='{$phone}', password='{$password}' WHERE id='{$id}'";
+               $sqlClient = "UPDATE `client` SET first_name='{$first_name}', last_name='{$last_name}', email='{$email}', phone='{$phone}' WHERE id='{$id}'";
 
                 if(mysqli_query($con,$sqlClient)){
                     $token = array(
@@ -159,7 +152,7 @@ function route($method, $urlData, $formData) {
                     );
                     // новый токен jwt
                     $jwt = JWT::encode($token, $key);
-                    echo json_encode($jwt);
+                    echo json_encode(array("jwt" => $jwt));
                 }
                 else
                 {
@@ -170,7 +163,7 @@ function route($method, $urlData, $formData) {
               else
               {
                   http_response_code(401);
-                  echo "Access deniewfed!";
+                  echo "Access denied!";
               }
         }
         else

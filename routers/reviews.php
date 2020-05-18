@@ -19,6 +19,7 @@ function route($method, $urlData, $formData) {
 
       $sql = "SELECT * FROM `review` WHERE product_id=".$product_id;
       if($result = mysqli_query($con,$sql)) {
+        $reviews = [];
         for($i = 0; $row = mysqli_fetch_assoc($result); $i++) {
 
           $sqlClient = "SELECT first_name FROM `client` WHERE id=".$row['client_id'];

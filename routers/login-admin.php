@@ -38,15 +38,15 @@ function route($method, $urlData, $formData) {
 
             // создание jwt
             $jwt = JWT::encode($token, $key);
-            echo json_encode($jwt);
+            echo json_encode(array("jwt" => $jwt));
           }
           else{
-            echo json_encode("Wrong password!");
+            echo json_encode("Неверный логин или пароль!");
           }
 
         }
         else {
-            echo json_encode("Wrong login!");
+            echo json_encode("Неверный логин или пароль!");
         }
         return;
     }
