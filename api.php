@@ -1,49 +1,40 @@
 <?php
-
+//Заголовок ответа определяет метод или методы , разрешенные при обращении к ресурсу
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: PUT, GET, POST, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
 
-$method = $_SERVER['REQUEST_METHOD'];
+$method = $_SERVER['REQUEST_METHOD']; //Метод поступающего запроса
 
-$formData = getFormData($method);
+$formData = getFormData($method); //Тело поступающего запроса
 
 
-function getFormData($method) {
+function getFormData($method) { //Взависимости от запроса возвращаем тело запроса
 
-    if ($method === 'GET')
+    if ($method === 'GET' || $method === 'DELETE')
       return $_GET;
-    if ($method === 'POST'){
-      $postdata = file_get_contents("php://input");
-      return $postdata;
+    if ($method === 'POST' || $method === 'PUT'){
+      return file_get_contents("php://input");
     }
-    if($method === 'PUT') {
-      $putdata = file_get_contents('php://input');
-      return $putdata;
-    }
-    if($method === 'DELETE'){
-      return;
-    }
+    //Если использован неизвестный запрос возвращаем ошибку
     header('HTTP/1.0 400 Bad Request');
     echo json_encode(array(
       'error' => 'Bad Request'
     ));
 }
 
-// separate url
-
+// Разбираем URL запроса
 $url = explode('?', $_SERVER['REQUEST_URI'], 2);
-
 $url = trim($url[0], '/');
-
 $urls = explode('/', $url);
 
-$router = $urls[1];
+$router = $urls[1]; //Роутер = Сущность API
 
-$urlData = array_slice($urls, 2);
+$urlData = array_slice($urls, 2); //Все, что указано после сущности
 
-// include router and start main fuction
-include_once 'routers/' . $router . '.php';
-route($method, $urlData, $formData);
+
+
+include_once 'routers/' . $router . '.php'; // Подключаение роутера сущности
+route($method, $urlData, $formData); //Старт основной функции
 
 ?>
