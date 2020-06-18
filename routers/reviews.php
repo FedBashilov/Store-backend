@@ -9,7 +9,7 @@ use \Firebase\JWT\JWT;
 function route($method, $urlData, $formData) {
 
     require 'database.php'; //Подключаем скрипт с БД
-    include_once 'clientJWT.php'; //Подключаем скрипт с JWT
+    include_once 'JWT/clientJWT.php'; //Подключаем скрипт с JWT
 
 
     if ($method === 'GET' && count($urlData) === 2) { //Запрос GET ../API/reviews/of-product/{product_id}

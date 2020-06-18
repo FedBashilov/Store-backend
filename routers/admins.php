@@ -22,29 +22,32 @@ function route($method, $urlData, $formData) {  //Главная функция
         $sqlAdmin = "SELECT * FROM `admin` WHERE login='$login'"; //SQL запрос
 
         //Если SQL запрос вернул результат и если пароль верный
-        if( $row = mysqli_fetch_assoc( mysqli_query($con,$sqlAdmin) ) &&
-          && password_verify( $password, $row['password'] ) ){
+        if( $row = mysqli_fetch_assoc( mysqli_query($con,$sqlAdmin) ) ){
+          if( password_verify( $password, $row['password'] ) ){
+            //Создание токена
+            $token = array(
+              "iss" => $iss,
+              "aud" => $aud,
+              "iat" => $iat,
+              "nbf" => $nbf,
+              "data" => array(
+                "id" => $row['id'],
+                "login" => $row['login']
+              )
+            );
+            http_response_code(200);  //Код ответа
 
-          //Создание токена
-          $token = array(
-             "iss" => $iss,
-             "aud" => $aud,
-             "iat" => $iat,
-             "nbf" => $nbf,
-             "data" => array(
-               "id" => $row['id'],
-               "login" => $row['login']
-             )
-          );
-
-          http_response_code(200);  //Код ответа
-
-          // Создание и отправка jwt
-          $jwt = JWT::encode($token, $key);
-          echo json_encode("jwt" => $jwt);
+            // Создание и отправка jwt
+            $jwt = JWT::encode($token, $key);
+            echo json_encode(array("jwt" => $jwt));
+          }
+          else {
+            http_response_code(200); //Код ответа
+            echo json_encode("Неверный логин или пароль!"); //Отправка ошибки
+          }
         }
         else {
-          http_response_code(422); //Код ответа
+          http_response_code(200); //Код ответа
           echo json_encode("Неверный логин или пароль!"); //Отправка ошибки
         }
         return;

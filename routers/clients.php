@@ -183,7 +183,7 @@ function route($method, $urlData, $formData) { //Главная функция
 
             // Создание и отправка jwt
             $jwt = JWT::encode($token, $key);
-            echo json_encode("jwt" => $jwt);
+            echo json_encode(array("jwt" => $jwt));
           }
           else {
             http_response_code(422);
